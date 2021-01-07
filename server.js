@@ -3,12 +3,17 @@ import bcrypt from 'bcrypt';
 import cors from 'cors';
 import knex from 'knex';
 
+import { handleRegister } from './controllers/register.js';
+import { handleSignin } from './controllers/signin.js';
+import { handleProfileGet } from './controllers/profile.js';
+import { handleRank } from './controllers/rank.js';
+
 const db = knex({
     client: 'pg',
     connection: {
         host: '127.0.0.1',
         user: 'postgres',
-        password: 'Kgt!Q4S#PdD#YR@WS*q8L',
+        password: '',
         database: 'face-recognition'
     }    
 });
@@ -25,84 +30,22 @@ app.get('/', (req, res) => {
 
 // signin
 app.post('/signin', (req, res) => {
-    const { email, password } = req.body;
-
-    db.select('email', 'hash').from('login')
-        .where('email', '=', email)
-        .then(data => {
-            const isValid = bcrypt.compareSync(password, data[0].hash);
-            if (isValid) {
-                return db.select('*').from('users')
-                            .where('email', '=', email)
-                            .then(user => {
-                                res.json(user[0])
-                            })
-                            .catch(error => res.status(400).json('unable to get user'))
-            } else {
-                res.status(400).json('wrong credentials')
-            }            
-        })
-        .catch(error => res.status(400).json('wrong credentials'))
+    handleSignin(req, res, db, bcrypt)
 })
 
 // register
 app.post('/register', (req, res) => {
-    const { name, email, password } = req.body;
-
-    const hash = bcrypt.hashSync(password, 10);
-
-    db.transaction(trx => {
-        trx.insert({
-            hash: hash,
-            email: email
-        })
-        .into('login')
-        .returning('email')
-        .then(loginEmail => {
-            return trx('users')
-                    .returning('*')
-                    .insert({
-                        email: loginEmail[0],
-                        name: name,
-                        joined: new Date()
-                    })
-                    .then(user => {
-                        res.json(user[0]);
-                    })
-        })
-        .then(trx.commit)
-        .catch(trx.rollback)
-    })    
-    .catch(error => res.status(400).json('unable to register'))
+    handleRegister(req, res, db, bcrypt)
 })
 
 // get a user profile
 app.get('/profile/:id', (req, res) => {
-    const { id } = req.params;
-    
-    db.select('*').from('users')
-        .where({id})
-        .then(user => {
-            if (user.length) {
-                res.json(user[0]);    
-            } else {
-                res.status(400).json('user not found')
-            }          
-        })
-        .catch(error => res.status(400).json('error getting user'))    
+    handleProfileGet(req, res, db)
 })
 
 // update user rank
 app.put('/rank', (req, res) => {
-    const { id } = req.body;
-    db('users')
-        .where('id', '=', id)
-        .increment('rank', 1)
-        .returning('rank')
-        .then(rank => {
-            res.json(rank[0])
-        })
-        .catch(error => res.status(400).json('unable to get rank'))
+    handleRank(req, res, db)
 })
 
 app.listen(3000, () => {
