@@ -7,6 +7,7 @@ import { handleRegister } from './controllers/register.js';
 import { handleSignin } from './controllers/signin.js';
 import { handleProfileGet } from './controllers/profile.js';
 import { handleRank } from './controllers/rank.js';
+import { handleClarifaiApiCall } from './controllers/image.js';
 
 const db = knex({
     client: 'pg',
@@ -46,6 +47,11 @@ app.get('/profile/:id', (req, res) => {
 // update user rank
 app.put('/rank', (req, res) => {
     handleRank(req, res, db)
+})
+
+// submit image url
+app.post('/image', (req, res) => {
+    handleClarifaiApiCall(req, res)
 })
 
 app.listen(3000, () => {
