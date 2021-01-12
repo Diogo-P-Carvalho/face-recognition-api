@@ -18,7 +18,9 @@ const db = knex({
         // password: '',
         // database: 'face-recognition'
         connectionString: process.env.DATABASE_URL,
-        ssl: true
+        ssl: {
+            rejectUnauthorized: false
+        }
     }    
 });
 
